@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+
+    <div id="app" class="container mt-5">
+        <tabela 
+            classes="table table-hover table-bordered" 
+            :colunas="['nome', 'email', 'cpf']">
+        </tabela>
+    </div>
+
+    <script src="./vue.js"></script>
+    <script>
+        const tabela = {
+            props: [
+                'classes',
+                'colunas'
+            ],
+            name: 'tabela',
+            data() {
+                return {
+                    dados: [],
+                    pagina: 1,
+                    ultima: 3
+                }
+            },
+            computed: {
+                totalColunas() {
+                    return this.$props.colunas.length;
+                },
+                vazio() {
+                    return this.dados.length > 0 ? false : true;
+                }
+            },
+            template: `<div>
+
+            <table :class="classes">
+                <thead>
+                    <tr>
+                        <th v-for="c in colunas" v-html="c"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr v-show="vazio">
+                        <td class="text-center" :colspan="totalColunas">&nbsp;</td>
+                    </tr>
+
+                    <tr v-for="d in dados" @click="selecionarLinha">
+                        <td v-for="c in d" v-html="c"></td>
+                    </tr>
+
+                </tbody>
+            </table>
+            <nav aria-label="Page navigation example" class="float-right">
+                <ul class="pagination">
+                    <li class="page-item" @click.prevent="paginar"><a class="page-link" href="#">Anterior</a></li>
+                    <li class="page-item active" @click.prevent="paginar"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item" @click.prevent="paginar"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item" @click.prevent="paginar"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item" @click.prevent="paginar"><a class="page-link" href="#">Próximo</a></li>
+                </ul>
+            </nav>
+            </div>`,
+            methods: {
+                selecionarLinha(event) {
+                    let jaSelecionada = event.target.closest('tbody').querySelector('tr.table-primary');
+                    let clicada = event.target.closest('tr');
+                    
+                    if(jaSelecionada && jaSelecionada !== clicada) {
+                        jaSelecionada.classList.remove('table-primary');
+                    }
+
+                    if(clicada.classList.contains('table-primary')) {
+                        clicada.classList.remove('table-primary');
+                    } else {
+                        clicada.classList.add('table-primary');
+                    }
+                },
+                paginar(e) {
+                    
+                    if (e.target.textContent === 'Anterior') {
+                        if(this.pagina === 1)
+                            return;
+
+                        this.pagina > 1 ? --this.pagina : 1;
+
+                    } else if (e.target.textContent === 'Próximo') {
+                        if(this.pagina === this.ultima)
+                            return;
+                            
+                        this.pagina < this.ultima ? ++this.pagina : this.ultima;
+                    } else {
+                        this.pagina = parseInt(e.target.textContent);
+                    }
+
+                    this.botaoPaginacaoAtivo(e.target);
+
+                    fetch(`paginacao.php?page=${this.pagina}`)
+                    .then(r => r.json())
+                    .then(r => {
+                        this.dados = r.data;
+                    });
+                    
+                },
+                botaoPaginacaoAtivo(clicado) {
+                    let ativo = clicado.closest('ul').querySelector('li.active');
+
+                    //clicou em próximo
+                    if(clicado.textContent === 'Próximo') {
+                        let proximoElemento = ativo.nextElementSibling;
+                        
+                        if(proximoElemento.textContent !== 'Próximo' && proximoElemento !== ativo) {
+                            ativo.classList.remove('active');
+                            proximoElemento.classList.add('active');
+                        }
+                    } else if(clicado.textContent === 'Anterior') {
+
+                        let anterior = ativo.previousElementSibling;
+                        if(anterior.textContent !== 'Anterior' && anterior !== ativo) {
+                            ativo.classList.remove('active');
+                            anterior.classList.add('active');
+                        }
+                    } else {
+                        let liClicado = clicado.closest('li');
+                        if(ativo !== liClicado) {
+                            ativo.classList.remove('active');
+                            liClicado.classList.add('active');
+                        }
+                    }
+                }
+            },
+            // created() {
+            //     if(!this.dados) {
+            //         this.dados
+            //     }
+            // }
+        }
+
+            new Vue({
+            el: '#app',
+            components: {
+                tabela
+            }
+        });
+
+    </script>
+</body>
+</html>
